@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import basespace
+import basespace, sw_exceptions
 import unittest
 class TestSpaceInit_Basics(unittest.TestCase):
     def setUp(self):
@@ -26,64 +26,63 @@ class TestSpaceInit_Restrictions(unittest.TestCase):
         for t in ['Farm','abbey','swamps']:
             # with is used here because 
             # this sets up and tares down the class every time.
-            with self.assertRaises(InputError):
-                BaseSpace(1,t,False,None)
+            with self.assertRaises(sw_exceptions.InputError):
+                BaseSpace(1,t,False,False,None)
                 
     def test_symbol_restriction_on_swamps(self):
         '''Tests that an exception is raised for symbol spelling errors'''
         for s in ['MagicSource','lost_tribes','swamps']:
             # with is used here because 
             # this sets up and tares down the class every time.
-            with self.assertRaises(InputError):
-                BaseSpace(1,'swamps',False,s)
+            with self.assertRaises(sw_exceptions.InputError):
+                BaseSpace(1,'swamps',False,False,s)
     
     def test_no_lost_tribes_on_mountains(self):
         '''Tests that exception is raised for lost_tribes placed on mountains '''
-        with self.assertRaises(InputError):
-            BaseSpace(1,'mountains',True,None)
+        with self.assertRaises(sw_exceptions.InputError):
+            BaseSpace(1,'mountains',False,True,None)
             
     def test_lost_tribes_exception_None(self):
         '''Tests that lost_tribes throws an error when set to None '''
         with self.assertRaises(TypeError):
-            BaseSpace(1,'swamp',None,None)
+            BaseSpace(1,'swamp',False,None,None)
         
     def test_lost_tribes_exception_one(self):
         '''Tests that lost_tribes throws an error when set to an int '''
         with self.assertRaises(TypeError):
-            BaseSpace(1,'swamp',1,None)
+            BaseSpace(1,'swamp',False,1,None)
             
     def test_lost_tribes_exception_zero(self):
         '''Tests that lost_tribes throws an error when set to an int '''
         with self.assertRaises(TypeError):
-            BaseSpace(1,'swamp',0,None)
+            BaseSpace(1,'swamp',False,0,None)
         
     def test_lost_tribes_exception_string(self):
         '''Tests that lost_tribes throws an error when set to a string'''
         with self.assertRaises(TypeError):
-            BaseSpace(1,'swamp','lost_tribes',None)
+            BaseSpace(1,'swamp',False,'lost_tribes',None)
         
     
     def test_no_zero_id(self):
         '''Tests that exception is raised for space_id set to 0'''
-        with self.assertRaises(InputError):
-            BaseSpace(0,'swamp',None,None)
+        with self.assertRaises(sw_exceptions.InputError):
+            BaseSpace(0,'swamp',False)
             
     def test_no_negative_id(self):
         '''Tests that exception is raised for negative space ids'''
-        with self.assertRaises(InputError):
-            BaseSpace(-1,'swamp',None,None)
+        with self.assertRaises(sw_exceptions.InputError):
+            BaseSpace(-1,'swamp',False)
             
     def test_no_string_id(self):
         '''Tests that string ids raise an exception'''
         with self.assertRaises(TypeError):
-            BaseSpace('a','swamp',None,None)
+            BaseSpace('a','swamp')
             
     def test_no_float_id(self):
         '''Tests that float ids raise an exception'''
         with self.assertRaises(TypeError):
-            BaseSpace(1.4,'swamp',None,None)
+            BaseSpace(1.4,'swamp')
             
-
 
 # this code for error handling was found at https://docs.python.org/2/tutorial/errors.html
 
@@ -91,7 +90,7 @@ class TestSpaceInit_LostTribes(unittest.TestCase):
     """Tests space initialization for lost tribes"""
 
     def setUp(self):
-        self.space = BaseSpace(1,'swamp',True,None)       
+        self.space = BaseSpace(1,'swamp',False,True,None)       
         
     def test_lost_tribes_sets_owner(self):
         '''Tests that lost_tribes option adds properly'''
@@ -102,7 +101,7 @@ class TestSpaceInit_LostTribes(unittest.TestCase):
         self.assertEqual(self.space.tokens['lost_tribes']==2)
 
 class TestSpaceInit_Mountains(unittest.TestCase):
-    """ Tests initialization issues specific to mountain spaces """
+    ''' Tests initialization cases specific to mountain spaces '''
 
     def setUp(self):
         self.space = BaseSpace(1,'mountains')
@@ -118,6 +117,26 @@ class TestSpaceInit_Mountains(unittest.TestCase):
     def test_token_count(self):
         '''Tests that setup assigns 1 mountain token'''
         self.assertEqual(self.space.tokens['mountains'],1)
+        
+class TestEdgeInit_Edges(unittest.TestCase):
+    ''' Tests initialization cases specific to edge spaces '''
+    
+    def test_edge_None(self):
+        '''Test that edge variable not assigned to None'''
+        with self.assertRaises(TypeError):
+            BaseSpace('a','swamp',None)
+    
+    def test_edge_string(self):
+        '''Test that edge varible not assigned a string'''
+        with self.assertRaises(TypeError):
+            BaseSpace('a','swamp','edge')
+
+    def test_edge_float(self):
+        '''Test that edge varible not assigned a float'''
+        with self.assertRaises(TypeError):
+            BaseSpace('a','swamp',1)
+    
+        
 
 class TestSpaceFunctions(unittest.TestCase):
     '''Tests a few of the smaller space functions'''
@@ -129,12 +148,12 @@ class TestSpaceFunctions(unittest.TestCase):
     # tests for the add_tokens function
     def test_add_tokens_negative_value(self):
         '''Tests if assigning negative token values leads to error'''
-        with self.assertRaises(InputError):
+        with self.assertRaises(sw_exceptions.InputError):
             self.space.add_tokens('generic_tokens',-5)
     
     def test_add_tokens_zero_values(self):
         '''Tests if assigning 0 tokens leads to error'''
-        with self.assertRaises(InputError):
+        with self.assertRaises(sw_exceptions.InputError):
             self.space.add_tokens('generic_tokens',0)
     
     def test_add_tokens_non_int(self):
@@ -161,7 +180,7 @@ class TestSpaceFunctions(unittest.TestCase):
     
     def test_add_neighbor_negative_error(self):
         ''' tests that the neighbor function throws an input error for negative'''
-        with self.assertRaises(InputError):
+        with self.assertRaises(sw_exceptions.InputError):
             self.space.add_neighbor(-5)
             
     #def test_remove_tokens(self):
@@ -185,8 +204,7 @@ class TestSpaceFunctions(unittest.TestCase):
         self.assertEqual(self.space.remove_tokens('generic_tokens',5),5)
         
         # check that that the token is removed from the tokens dict
-        self.assertNotIn('generic_tokens',self.space.tokens)
-        
+        self.assertNotIn('generic_tokens',self.space.tokens)    
         
     def test_remove_tokens_remove_some(self):
         '''tests that BaseSpace.remove_tokens removes the right number of
@@ -203,13 +221,13 @@ class TestSpaceFunctions(unittest.TestCase):
         ''' tests that remove_tokens throws an exception 
             if too many tokens are removed'''
         self.space.add_tokens('generic_tokens',2)
-        with self.assertRaises(InputError):
+        with self.assertRaises(sw_exceptions.InputError):
             self.space.remove_tokens(5)
             
     def test_remove_tokens_remove_wrong_key(self):
         ''' tests that remove_tokens throws an exception 
  		if a bad key is suplied'''
-        with self.assertRaises(InputError):
+        with self.assertRaises(sw_exceptions.InputError):
             self.space.remove_tokens('generic_token')
             
 if __name__ == '__main__':

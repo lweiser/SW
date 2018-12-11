@@ -1,18 +1,5 @@
 #!/usr/bin/env python
-class Error(Exception):
-    """Base Class for Exceptions in this module"""
-    pass
-
-class InputError(Error):
-    """Exception raised for errors in the input.
-
-    Attributes:
-        expr -- input expression in which the error occurred
-        msg  -- explanation of the error
-    """
-    def __init__(self, msg):
-        self.msg = msg
-
+import sw_exceptions
 class BaseSpace:
     ''' Basic Small World Space 
     ...
@@ -76,7 +63,8 @@ class BaseSpace:
         
         if token not in self.tokens:
             ## TODO: throw an error to prevent call? 
-            raise InputError('Token {} could not be removed, not on space.'.format(token))
+            raise sw_exceptions.InputError(
+                    'Token {} could not be removed, not on space.'.format(token))
         
         # return all tokens if count set to None
         elif count is None:
@@ -84,8 +72,9 @@ class BaseSpace:
           
         elif count > self.tokens[token]:
             # TODO: change this to a custom exception later? 
-            raise InputError('Cannot remove more tokens ({})than on space ({})'.format(count,
-                                                                                        self.tokens[token]))
+            raise sw_exceptions.InputError(
+                    'Cannot remove more tokens ({})than on space ({})'.format(
+                            count, self.tokens[token]))
         # remove count tokens if possible
         elif count == self.tokens[token]:
             # pop the key from the dictionary to remove everything
@@ -102,7 +91,7 @@ class BaseSpace:
         
         # TODO: Write a restriction on input
         if ( not None ) and ( not isinstance(new_owner,str)):
-            raise InputError('Change_owner requires a string as input.')
+            raise sw_exceptions.InputError('Change_owner requires a string as input.')
             
         else: self.owner = new_owner
             
@@ -119,28 +108,20 @@ class BaseSpace:
             raise TypeError('Invalid value: {}! Must be an integer!'.format(value))
         
         if value < cutoff:
-            raise InputError('Illegal value: {}! Must be less than: {} !'.format(value,cutoff))
+            raise sw_exceptions.InputError(
+                    'Illegal value: {}! Must be less than: {} !'.format(value,cutoff))
     
     def __check_init_inputs(self,space_id,terrain,lost_tribes,map_symbol):
-        ''' This function tests all of the input errors'''
+        ''' This function raises assertions for all input errors'''
         
-        __terrain_types = set(['farm','hills','mountains','swamp','edge','water'])
-        __map_symbols = set(['cavern','magic_source','mine'])
+        __terrain_types = set(['farm','hills','mountains','swamp','water'])
+        __map_symbols = set(['cavern','magic','mine'])
     
         if terrain not in __terrain_types:
-            raise InputError('Invalid terrain type: {}'.format(terrain))
+            raise sw_exceptions.InputError('Invalid terrain type: {}'.format(terrain))
             
-        if space_id < 0:
-            raise InputError('ID:({}) invalid! Space ID must be greater than 0!'.format(space_id)) 
-            
-        if (space_id < 1) and (terrain != 'edge'):
-            raise InputError("Only edges can have ID:0")
-            
-        if (terrain == 'edge'):
-            if space_id != 0:
-                raise InputError("Only space 0 can be an edge.")
-            if lost_tribes != False:
-                raise InputError("Lost tribes not allowed on the edge!")
+        if (space_id < 1):
+            raise sw_exceptions.InputError("Space ID must be positive")
                 
         if not isinstance(lost_tribes,bool):
             raise TypeError('lost_tribes:{} invalid! Must be a bool!'.format(lost_tribes))
@@ -149,17 +130,23 @@ class BaseSpace:
             raise TypeError('ID:({}) invalid! Must be an integer!'.format(space_id))
             
         if ((map_symbol is not None) and (map_symbol not in __map_symbols)):
-                raise InputError('Invalid map symbol: {}'.format(map_symbol))
+                raise sw_exceptions.InputError('Invalid map symbol: {}'.format(map_symbol))
                 
-        if ( terrain =='mountains') and (lost_tribes != False):
-                raise InputError('\'lost_tribes\' not permitted on \'mountains\' terrain' )  
-        
-    
-    def __init__(self,space_id:int,terrain:str,lost_tribes=False,map_symbol=None):  
+        if (terrain =='mountains') and (lost_tribes != False):
+                raise sw_exceptions.InputError(
+                        '\'lost_tribes\' not permitted on \'mountains\' terrain' )
+                
+        if not isinstance(edge,bool):
+            raise TypeError('edge:{} invalid! Must be a bool!'.format(edge))
+
+    def __init__(self,space_id:int,terrain:str,edge=True,
+                 lost_tribes=False,map_symbol=None):  
         '''Initializes the BaseSpace
         Args: space_id - integer id of the space
         
               terrain - string from list [mountains, swamp, farm, hills, edge, water]
+              
+              edge - True if an edge space, false otherwise.
               
               lost_tribes - bool indicating if lost_tribes are present
               
@@ -189,7 +176,8 @@ class BaseSpace:
         
         # I'm not sure that I need both of these
         self.name = 'Space_{}'.format(space_id)
-        self.id = space_id      
+        self.id = space_id    
+        self.is_edge=edge
         
         # Is this the best way to bookkeep the owner?
         if lost_tribes is False:
